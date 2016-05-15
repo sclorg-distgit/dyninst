@@ -4,29 +4,21 @@ Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: %{?scl_prefix}dyninst
 Group: Development/Libraries
-Release: 5%{?dist}
+Release: 3%{?dist}
 URL: http://www.dyninst.org
-Version: 8.2.1
+Version: 9.1.0
 Exclusiveos: linux
 #dyninst only knows the following architectures
 ExclusiveArch: %{ix86} x86_64 ppc ppc64
 
-# The source for this package was pulled from upstream's vcs.  Use the
-# following commands to generate the tarball:
-#  git clone http://git.dyninst.org/dyninst.git; cd dyninst
-#  git archive --format=tar.gz --prefix=dyninst/ v8.2.1 > dyninst-8.2.1.tar.gz
-#  git clone http://git.dyninst.org/docs.git; cd docs
-#  git archive --format=tar.gz --prefix=docs/ v8.2.0.1 > dyninst-docs-8.2.0.1.tar.gz
-#  git clone http://git.dyninst.org/testsuite.git; cd testsuite
-#  git archive --format=tar.gz --prefix=testsuite/ v8.2.0.1 > dyninst-testsuite-8.2.0.1.tar.gz
-# Verify the commit ids with:
-#  gunzip -c dyninst-8.2.1.tar.gz | git get-tar-commit-id
-#  gunzip -c dyninst-docs-8.2.0.1.tar.gz | git get-tar-commit-id
-#  gunzip -c dyninst-testsuite-8.2.0.1.tar.gz | git get-tar-commit-id
-Source0: dyninst-8.2.1.tar.gz
-Source1: dyninst-docs-8.2.0.1.tar.gz
-Source2: dyninst-testsuite-8.2.0.1.tar.gz
-Source3: libdwarf-20140805.tar.gz
+Source0: http://www.paradyn.org/release%{version}/DyninstAPI-%{version}.tgz
+Source1: http://www.paradyn.org/release%{version}/Testsuite-%{version}.tgz
+Patch1: dyninst-export.patch
+
+%global dyninst_base DyninstAPI-%{version}
+%global testsuite_base Testsuite-%{version}
+
+Source3: libdwarf-20150915.tar.gz
 # XXX: temporarily bundled
 # BuildRequires: %{scl_prefix}libdwarf-devel >= 20111030
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -99,7 +91,8 @@ making sure that dyninst works properly.
 %prep
 %setup -q -n %{name}-%{version} -c
 %setup -q -T -D -a 1
-%setup -q -T -D -a 2
+
+%patch1 -p0 -b .export
 
 # XXX: bundled libdwarf
 %setup -q -T -D -b 3
@@ -107,15 +100,16 @@ making sure that dyninst works properly.
 %build
 
 # bundled libdwarf build - assemble an .a archive, but built with -fPIC
-pushd ../dwarf-20140805/libdwarf
+pushd ../dwarf-20150915/libdwarf
 libdwarf_builddir=`pwd`
 %configure --disable-shared
 make %{?_smp_mflags} dwfpic=-fPIC
 popd
 
-cd dyninst
+cd %{dyninst_base}
 
 %cmake \
+ -DENABLE_STATIC_LIBS=1 \
  -DCMAKE_BUILD_TYPE:STRING=None \
  -DINSTALL_LIB_DIR:PATH=%{_libdir}/dyninst \
  -DINSTALL_INCLUDE_DIR:PATH=%{_includedir}/dyninst \
@@ -128,12 +122,12 @@ make %{?_smp_mflags}
 
 # Hack to install dyninst nearby, so the testsuite can use it
 make DESTDIR=../install install
-sed -i -e 's!%{_libdir}/dyninst!../install%{_libdir}/dyninst!' \
-  ../install%{_libdir}/cmake/Dyninst/*.cmake
+find ../install -name '*.cmake' -execdir \
+  sed -i -e 's!%{_prefix}!../install&!' '{}' '+'
 
-cd ../testsuite
+cd ../%{testsuite_base}
 %cmake \
- -DDyninst_DIR:PATH=../install%{_libdir}/cmake/Dyninst \
+ -DDyninst_DIR:PATH=$PWD/../install%{_libdir}/cmake/Dyninst \
  -DINSTALL_DIR:PATH=%{_libdir}/dyninst/testsuite \
  -DCMAKE_BUILD_TYPE:STRING=Debug \
  -DBoost_NO_BOOST_CMAKE=ON \
@@ -142,24 +136,25 @@ make %{?_smp_mflags}
 
 %install
 
-cd dyninst
+cd %{dyninst_base}
 make DESTDIR=$RPM_BUILD_ROOT install
 
-cd ../testsuite
+# It doesn't install docs the way we want, so remove them.
+# We'll just grab the pdfs later, directly from the build dir.
+rm -v %{buildroot}%{_docdir}/*-%{version}.pdf
+
+cd ../%{testsuite_base}
 make DESTDIR=$RPM_BUILD_ROOT install
 
 mkdir -p $RPM_BUILD_ROOT/etc/ld.so.conf.d
 echo "%{_libdir}/dyninst" > $RPM_BUILD_ROOT/etc/ld.so.conf.d/%{name}-%{_arch}.conf
 
-# Ugly hack to fix permissions
-chmod 644 $RPM_BUILD_ROOT%{_includedir}/dyninst/*
-chmod 644 $RPM_BUILD_ROOT%{_libdir}/dyninst/*.a
-
-# Uglier hack to mask testsuite files from debuginfo extraction.  Running the
+# Ugly hack to mask testsuite files from debuginfo extraction.  Running the
 # testsuite requires debuginfo, so extraction is useless.  However, debuginfo
 # extraction is still nice for the main libraries, so we don't want to disable
 # it package-wide.  The permissions are restored by attr(755,-,-) in files.
-chmod 644 $RPM_BUILD_ROOT%{_libdir}/dyninst/testsuite/*
+find %{buildroot}%{_libdir}/dyninst/testsuite/ \
+  -type f '!' -name '*.a' -execdir chmod 644 '{}' '+'
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -170,22 +165,21 @@ chmod 644 $RPM_BUILD_ROOT%{_libdir}/dyninst/testsuite/*
 %dir %{_libdir}/dyninst
 %{_libdir}/dyninst/*.so.*
 
-%doc dyninst/COPYRIGHT
-%doc dyninst/LGPL
+%doc %{dyninst_base}/COPYRIGHT
+%doc %{dyninst_base}/LGPL
 
 %config(noreplace) /etc/ld.so.conf.d/*
 
 %files doc
 %defattr(-,root,root,-)
-%doc docs/dynC_API.pdf
-%doc docs/DyninstAPI.pdf
-%doc docs/dyninstAPI/examples/
-%doc docs/InstructionAPI.pdf
-%doc docs/ParseAPI.pdf
-%doc docs/PatchAPI.pdf
-%doc docs/ProcControlAPI.pdf
-%doc docs/StackwalkerAPI.pdf
-%doc docs/SymtabAPI.pdf
+%doc %{dyninst_base}/dynC_API/doc/dynC_API.pdf
+%doc %{dyninst_base}/dyninstAPI/doc/dyninstAPI.pdf
+%doc %{dyninst_base}/instructionAPI/doc/instructionAPI.pdf
+%doc %{dyninst_base}/parseAPI/doc/parseAPI.pdf
+%doc %{dyninst_base}/patchAPI/doc/patchAPI.pdf
+%doc %{dyninst_base}/proccontrol/doc/proccontrol.pdf
+%doc %{dyninst_base}/stackwalk/doc/stackwalk.pdf
+%doc %{dyninst_base}/symtabAPI/doc/symtabAPI.pdf
 
 %files devel
 %defattr(-,root,root,-)
@@ -200,12 +194,22 @@ chmod 644 $RPM_BUILD_ROOT%{_libdir}/dyninst/testsuite/*
 
 %files testsuite
 %defattr(-,root,root,-)
-#%{_bindir}/parseThat
+#{_bindir}/parseThat
 %dir %{_libdir}/dyninst/testsuite/
 # Restore the permissions that were hacked out above, during install.
 %attr(755,root,root) %{_libdir}/dyninst/testsuite/*
+%attr(644,root,root) %{_libdir}/dyninst/testsuite/*.a
 
 %changelog
+* Fri Mar 11 2016 Frank Ch. Eigler <fche@redhat.com> - 9.1.0-3
+- Export libdyninstAPI_RT_init_maxthreads (ref rhbz1315841/1316956)
+
+* Thu Feb 25 2016 Frank Ch. Eigler <fche@redhat.com> - 9.1.0-2
+- buildroot bump respin
+
+* Wed Jan 13 2016 Josh Stone <jistone@redhat.com> - 9.1.0-1
+- Update to 9.1.0
+
 * Mon Sep 21 2015 Josh Stone <jistone@redhat.com> - 8.2.1-5
 - Rebuild for x86_64 only.
 
