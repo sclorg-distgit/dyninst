@@ -4,7 +4,7 @@ Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: %{?scl_prefix}dyninst
 Group: Development/Libraries
-Release: 1%{?dist}
+Release: 2%{?dist}
 URL: http://www.dyninst.org
 Version: 9.2.0
 Exclusiveos: linux
@@ -13,6 +13,7 @@ ExclusiveArch: %{ix86} x86_64 ppc ppc64
 
 Source0: https://github.com/dyninst/dyninst/archive/v9.2.0.tar.gz#/dyninst-%{version}.tar.gz
 Source1: https://github.com/dyninst/dyninst/releases/download/v9.2.0/Testsuite-9.2.0.zip
+Patch1: dyninst-9.2.0-stackanalysis-template-angle.patch
 
 %global dyninst_base dyninst-%{version}
 %global testsuite_base testsuite-master
@@ -91,6 +92,8 @@ making sure that dyninst works properly.
 %prep
 %setup -q -n %{name}-%{version} -c
 %setup -q -T -D -a 1
+
+%patch1 -p0 -b .template-export
 
 # XXX: bundled libdwarf
 %setup -q -T -D -b 3
@@ -200,6 +203,9 @@ find %{buildroot}%{_libdir}/dyninst/testsuite/ \
 %attr(644,root,root) %{_libdir}/dyninst/testsuite/*.a
 
 %changelog
+* Tue Jul 26 2016 Josh Stone <jistone@redhat.com> - 9.2.0-2
+- Patch a template '>>' in stackanalysis.h for pre-C++11 users.
+
 * Thu Jul 21 2016 Josh Stone <jistone@redhat.com> - 9.2.0-1
 - Update to 9.2.0
 
