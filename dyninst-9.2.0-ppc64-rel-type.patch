@@ -1,0 +1,39 @@
+commit d0b2355e4cfad4ef4352be90b9c3ceef89648d91 (from 6e1b36f62c0830978ab4db44f763e030cc74a18d)
+Merge: 6e1b36f62c08 833960213a6b
+Author: Bill Williams <wwilliam47@gmail.com>
+Date:   Thu Aug 18 12:24:35 2016 -0500
+
+    Merge pull request #156 from cuviper/ppc64-rel-type
+    
+    symtabAPI: use the known type for new relocations
+
+diff --git a/symtabAPI/src/emitElf.C b/symtabAPI/src/emitElf.C
+index 12dae8e3299f..f7edb211fb06 100644
+--- a/symtabAPI/src/emitElf.C
++++ b/symtabAPI/src/emitElf.C
+@@ -2121,10 +2121,10 @@ void emitElf<ElfTypes>::createRelocationSections(std::vector<relocationEntry> &r
+             rels[j].r_offset = newRels[i].rel_addr() + library_adjust;
+             if (dynSymNameMapping.find(newRels[i].name()) != dynSymNameMapping.end()) {
+                 rels[j].r_info = ElfTypes::makeRelocInfo(dynSymNameMapping[newRels[i].name()],
+-                                                         relocationEntry::getGlobalRelType(obj->getAddressWidth()));
++                                                         newRels[i].getRelType());
+             } else {
+                 rels[j].r_info = ElfTypes::makeRelocInfo((unsigned long) (STN_UNDEF),
+-                                                         relocationEntry::getGlobalRelType(obj->getAddressWidth()));
++                                                         newRels[i].getRelType());
+             }
+             j++;
+             l++;
+@@ -2134,10 +2134,10 @@ void emitElf<ElfTypes>::createRelocationSections(std::vector<relocationEntry> &r
+             //if( relas[k].r_addend ) relas[k].r_addend += library_adjust;
+             if (dynSymNameMapping.find(newRels[i].name()) != dynSymNameMapping.end()) {
+                 relas[k].r_info = ElfTypes::makeRelocInfo(dynSymNameMapping[newRels[i].name()],
+-                                                          relocationEntry::getGlobalRelType(obj->getAddressWidth()));
++                                                          newRels[i].getRelType());
+             } else {
+                 relas[k].r_info = ElfTypes::makeRelocInfo((unsigned long) (STN_UNDEF),
+-                                                          relocationEntry::getGlobalRelType(obj->getAddressWidth()));
++                                                          newRels[i].getRelType());
+             }
+             k++;
+             m++;

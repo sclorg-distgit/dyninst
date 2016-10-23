@@ -1,0 +1,32 @@
+commit 42729454d3a69ae30694646dc5a95737b887b829
+Author: Josh Stone <jistone@redhat.com>
+Date:   Fri Sep 9 14:27:49 2016 -0700
+
+    RT: trymmap should retry if the result is out of range
+    
+    An address passed to `mmap` is just taken as a hint, and the OS may
+    return something wildly different if that address is not available.
+    This is undesirable when we're trying to create a constrained alloc.
+    
+    Now we will check that the address is in the requested range before
+    accepting it.  Otherwise, unmap it and try a new hint.
+
+diff --git a/dyninstAPI_RT/src/RTheap.c b/dyninstAPI_RT/src/RTheap.c
+index eae69700d3ef..ddb4a363bf25 100644
+--- a/dyninstAPI_RT/src/RTheap.c
++++ b/dyninstAPI_RT/src/RTheap.c
+@@ -128,8 +128,13 @@ static Address trymmap(size_t len, Address beg, Address end, size_t inc, int fd)
+   /* until we get one that succeeds.*/
+   for (addr = beg; addr + len <= end; addr += inc) {
+     result = map_region((void *) addr, len, fd);
+-    if (result)
++    if (result) {
++      /* Success doesn't necessarily mean it actually mapped at the hinted
++       * address.  Return if it's in range, else unmap and try again. */
++      if ((Address) result >= beg && (Address) result + len <= end)
+         return (Address) result;
++      unmap_region(result, len);
++    }
+   }
+   return (Address) NULL;
+ }
