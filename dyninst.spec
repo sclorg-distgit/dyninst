@@ -4,7 +4,7 @@ Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: %{?scl_prefix}dyninst
 Group: Development/Libraries
-Release: 3%{?dist}
+Release: 4%{?dist}
 URL: http://www.dyninst.org
 Version: 9.2.0
 Exclusiveos: linux
@@ -15,6 +15,9 @@ Source0: https://github.com/dyninst/dyninst/archive/v9.2.0.tar.gz#/dyninst-%{ver
 Source1: https://github.com/dyninst/dyninst/releases/download/v9.2.0/Testsuite-9.2.0.zip
 Patch1: dyninst-9.2.0-stackanalysis-template-angle.patch
 Patch2: dyninst-9.2.0-proccontrol-attach-no-exe.patch
+Patch3: dyninst-9.2.0-ppc64-rel-type.patch
+Patch4: dyninst-9.2.0-modify-data-64.patch
+Patch5: dyninst-9.2.0-pr176-constrain-trymmap.patch
 
 %global dyninst_base dyninst-%{version}
 %global testsuite_base testsuite-master
@@ -96,6 +99,9 @@ making sure that dyninst works properly.
 
 %patch1 -p0 -b .template-export
 %patch2 -p1 -d %{dyninst_base} -b .attach-no-exe
+%patch3 -p1 -d %{dyninst_base} -b .ppc64-rel-type
+%patch4 -p1 -d %{dyninst_base} -b .modify-data-64
+%patch5 -p1 -d %{dyninst_base} -b .constrain-trymmap
 
 # XXX: bundled libdwarf
 %setup -q -T -D -b 3
@@ -205,6 +211,11 @@ find %{buildroot}%{_libdir}/dyninst/testsuite/ \
 %attr(644,root,root) %{_libdir}/dyninst/testsuite/*.a
 
 %changelog
+* Thu Sep 15 2016 Josh Stone <jistone@redhat.com> - 9.2.0-4
+- rhbz1366656: fix ppc64 relocation rewriting
+- rhbz1366726: check mmap constrains for locality
+- rhbz1367225: fix x86 codegen for 64-bit offsets
+
 * Tue Aug 09 2016 Josh Stone <jistone@redhat.com> - 9.2.0-3
 - rhbz1363794: fix proccontrol attach without an exe.
 
