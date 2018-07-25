@@ -4,7 +4,7 @@ Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: %{?scl_prefix}dyninst
 Group: Development/Libraries
-Release: 4%{?dist}
+Release: 5%{?dist}
 URL: http://www.dyninst.org
 Version: 9.3.2
 Exclusiveos: linux
@@ -20,13 +20,9 @@ Source1: https://github.com/dyninst/testsuite/archive/v9.3.0/testsuite-9.3.0.tar
 Patch1: testsuite-9.3.0-junit-nullptr.patch
 Patch2: addrtranslate-sysv.patch
 Patch3: Object-elf.patch
-%if 0%{?rhel} == 6
 Patch4: dyninst-9.3.2-sstream.patch
-%endif
-%if 0%{?rhel} == 8
-Patch5: gcc8.patch
-Patch6: glibc-rpc.patch
-%endif
+Patch5: dyninst-9.3.2-gcc8.patch
+Patch6: dyninst-9.3.2-glibc-rpc.patch
 
 %global dyninst_base dyninst-%{version}
 # Explicit version since it does not match the source version
@@ -42,9 +38,8 @@ BuildRequires: elfutils-libelf-devel
 BuildRequires: boost-devel
 BuildRequires: binutils-devel
 BuildRequires: cmake
-%if 0%{?rhel} == 8
 BuildRequires: libtirpc-devel
-%endif
+
 %{?scl:Requires: %scl_runtime}
 
 # Extra requires just for the testsuite
@@ -53,7 +48,7 @@ BuildRequires: libtirpc-devel
 BuildRequires: libstdc++-static
 %endif
 BuildRequires: gcc-gfortran glibc-static nasm
-%if 0%{?el6:1}
+%if 0%{?rhel} == 6
 # C++11 requires devtoolset gcc.
 BuildRequires: %{?scl_prefix}gcc-c++
 %endif
@@ -118,13 +113,9 @@ making sure that dyninst works properly.
 %patch1 -p0 -b .template-export
 %patch2 -p0 -b .sysv
 %patch3 -p0 -b .objelf
-%if 0%{?rhel} == 6
 %patch4 -p0 -b .sstream
-%endif
-%if 0%{?rhel} == 8
-%patch5 -p0 -b .gcc8
-%patch6 -p0 -b .glibc-rpc
-%endif
+%patch5 -p1 -b .gcc8
+%patch6 -p1 -b .glibc-rpc
 
 # XXX: bundled libdwarf
 %setup -q -T -D -b 3
@@ -145,7 +136,7 @@ popd
 
 cd %{dyninst_base}
 
-%if 0%{?el6:1}
+%if 0%{?rhel} == 6
 # C++11 requires devtoolset gcc.
 %{?scl:PATH=%{_bindir}${PATH:+:${PATH}}}
 %endif
@@ -245,6 +236,9 @@ find %{buildroot}%{_libdir}/dyninst/testsuite/ \
 %attr(644,root,root) %{_libdir}/dyninst/testsuite/*.a
 
 %changelog
+* Tue Jul 17 2018 William Cohen <wcohen@redhat.com> - 9.3.2-5
+- Avoid conditional patching of source files.
+
 * Thu Jul 05 2018 Stan Cox <scox@redhat.com> - 9.3.2-4
 - Make specfile rhel agnostic
 

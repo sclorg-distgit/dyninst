@@ -1,0 +1,23 @@
+diff -up dyninst-9.3.2/dyninst-9.3.2/CMakeLists.txt.me dyninst-9.3.2/dyninst-9.3.2/CMakeLists.txt
+--- dyninst-9.3.2/dyninst-9.3.2/CMakeLists.txt.me	2018-02-07 15:25:38.925763122 +0100
++++ dyninst-9.3.2/dyninst-9.3.2/CMakeLists.txt	2018-02-07 15:30:42.242099198 +0100
+@@ -19,6 +19,7 @@ include (${DYNINST_ROOT}/cmake/shared.cm
+ configure_file(cmake/version.h.in common/h/version.h)
+ include_directories(${PROJECT_BINARY_DIR})
+ include_directories(${PROJECT_BINARY_DIR}/common/h)
++include_directories("/usr/include/tirpc/")
+ set (HEADER_DIRS common
+     dataflowAPI
+     dyninstAPI
+diff -up dyninst-9.3.2/dyninst-9.3.2/common/src/linuxHeaders.h.me dyninst-9.3.2/dyninst-9.3.2/common/src/linuxHeaders.h
+--- dyninst-9.3.2/dyninst-9.3.2/common/src/linuxHeaders.h.me	2018-02-07 15:06:45.961780668 +0100
++++ dyninst-9.3.2/dyninst-9.3.2/common/src/linuxHeaders.h	2018-02-07 15:38:56.832278338 +0100
+@@ -281,7 +281,7 @@ inline bool_t P_xdr_string(XDR *x, char
+ inline void P_xdrrec_create(XDR *x, const u_int send_sz, const u_int rec_sz,
+ 			    const caddr_t handle, 
+ 			    xdr_rd_func read_r, xdr_wr_func write_f) {
+-  xdrrec_create(x, send_sz, rec_sz, handle, (int(*)(char*, char*, int))read_r, (int(*)(char*, char*, int))write_f);}
++  xdrrec_create(x, send_sz, rec_sz, handle, (int(*)(void*, void*, int))read_r, (int(*)(void*, void*, int))write_f);}
+ inline bool_t P_xdrrec_endofrecord(XDR *x, int now) { 
+   return (xdrrec_endofrecord(x, now));}
+ inline bool_t P_xdrrec_skiprecord(XDR *x) { return (xdrrec_skiprecord(x));}

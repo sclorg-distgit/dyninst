@@ -1,0 +1,19 @@
+--- dyninst-9.3.2/symtabAPI/src/dwarfWalker.C.orig      2017-04-17 17:51:11.000000000 -0400
++++ dyninst-9.3.2/symtabAPI/src/dwarfWalker.C   2017-06-13 13:40:07.971388015 -0400
+@@ -43,6 +43,7 @@
+ #include "debug_common.h"
+ #include "Type-mem.h"
+ #include <boost/bind.hpp>
++#include <sstream>
+ using namespace Dyninst;
+ using namespace SymtabAPI;
+ using namespace Dwarf;
+@@ -1182,7 +1183,7 @@
+       bool hasLineNumber = false;
+       std::string fileName;  
+       if (!getLineInformation(lineNumber, hasLineNumber, fileName)) return false;
+-      stringstream ss;
++      std::stringstream ss;
+       ss << "{anonymous ";
+       switch (tag()) {
+       case DW_TAG_structure_type:
