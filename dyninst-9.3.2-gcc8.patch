@@ -1,0 +1,14 @@
+diff -up dyninst-9.3.2/dyninst-9.3.2/symtabAPI/src/emitElf.C.me dyninst-9.3.2/dyninst-9.3.2/symtabAPI/src/emitElf.C
+--- dyninst-9.3.2/dyninst-9.3.2/symtabAPI/src/emitElf.C.me	2018-02-07 15:50:36.706363500 +0100
++++ dyninst-9.3.2/dyninst-9.3.2/symtabAPI/src/emitElf.C	2018-02-07 16:30:28.173906877 +0100
+@@ -2512,8 +2512,8 @@ void emitElf<ElfTypes>::createDynamicSec
+ 
+     if (!object->hasReldyn() && !object->hasReladyn()) {
+         if (object->getRelType() == Region::RT_REL) {
+-            new_dynamic_entries.push_back(make_pair(DT_REL, 0));
+-            new_dynamic_entries.push_back(make_pair(DT_RELSZ, 0));
++            new_dynamic_entries.push_back(std::pair<long, long>(DT_REL, 0));
++            new_dynamic_entries.push_back(std::pair<long, long>(DT_RELSZ, 0));
+ 
+             dynamicSecData[DT_REL].push_back(dynsecData + curpos);
+             dynsecData[curpos].d_tag = DT_NULL;
