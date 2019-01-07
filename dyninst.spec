@@ -4,7 +4,7 @@ Summary: An API for Run-time Code Generation
 License: LGPLv2+
 Name: %{?scl_prefix}dyninst
 Group: Development/Libraries
-Release: 5%{?dist}
+Release: 5.bs1%{?dist}
 URL: http://www.dyninst.org
 Version: 9.3.2
 Exclusiveos: linux
